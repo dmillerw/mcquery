@@ -3,6 +3,7 @@ package me.dmillerw.mcquery.queryable;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 import fi.iki.elonen.NanoHTTPD;
+import me.dmillerw.mcquery.Config;
 import me.dmillerw.mcquery.lib.JsonUtils;
 import me.dmillerw.mcquery.lib.PosUtils;
 import me.dmillerw.mcquery.queryable.data.McBlockState;
@@ -61,6 +62,11 @@ public class Server extends NanoHTTPD {
     private static Response path(IHTTPSession session) {
         String path = session.getUri();
         Context context = new Context(session);
+
+//        String apiKey = session.getHeaders().getOrDefault("x-api-key", "");
+//        if ("YOUNEEDTOSETME".equals(apiKey) || !Config.GENERAL.apiKey.get().equals(apiKey)) {
+//            return newJsonResponse(QuickyBuilder.builder().set("error", true).set("message", "invalid api key").build());
+//        }
 
         Function<Context, CompletableFuture<Response>> rawPath = flatPaths.get(path);
         if (rawPath != null) {
@@ -145,6 +151,14 @@ public class Server extends NanoHTTPD {
 
     public Server() {
         super(8080);
+    }
+
+    private int getPort() {
+        try {
+            return Integer.valueOf(Config.GENERAL.port.get());
+        } catch (Exception ex) {
+            return 8080;
+        }
     }
 
     @Override
