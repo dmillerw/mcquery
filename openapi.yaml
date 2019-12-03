@@ -1,0 +1,320 @@
+openapi: 3.0.0
+info:
+  title: McQuery API
+  version: 1.0.0
+servers:
+- url: 'http://localhost:8080'
+components:
+  schemas:
+    BlockPos:
+      properties:
+        x:
+          type: number
+        y:
+          type: number
+        z:
+          type: number
+    GameProfile:
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        properties:
+          type: object
+    Potion:
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+          - beneficial
+          - harmful
+          - neutral
+    PotionInstance:
+      properties:
+        potion:
+          type: object
+          $ref: '#/components/schemas/Potion'
+        duration:
+          type: number
+        amplifier:
+          type: number
+    Entity:
+      properties:
+        uuid:
+          type: string
+        name:
+          type: string
+        classification:
+          type: string
+        x:
+          type: number
+        y:
+          type: number
+        z:
+          type: number
+    LivingEntity:
+      allOf:
+      - $ref: '#/components/schemas/Entity'
+      - properties:
+          health:
+            type: number
+          maxHealth:
+            type: number
+          attributes:
+            type: object
+            additionalProperties:
+              type: number
+          potionEffects:
+            type: array
+            items:
+              $ref: '#/components/schemas/PotionInstance'
+          equipment:
+            type: object
+            properties:
+              head:
+                $ref: '#/components/schemas/ItemStack'
+              chest:
+                $ref: '#/components/schemas/ItemStack'
+              legs:
+                $ref: '#/components/schemas/ItemStack'
+              feet:
+                $ref: '#/components/schemas/ItemStack'
+              mainhand:
+                $ref: '#/components/schemas/ItemStack'
+              offhand:
+                $ref: '#/components/schemas/ItemStack'
+    PlayerEntityStub:
+      allOf:
+      - $ref: '#/components/schemas/LivingEntity'
+      - properties:
+          gameProfile:
+            $ref: '#/components/schemas/GameProfile'
+    PlayerEntity:
+      allOf:
+      - $ref: '#/components/schemas/PlayerEntityStub'
+    PlayerHotbar:
+      properties:
+        selectedIndex:
+          type: number
+        inventory:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemStack'
+    PlayerInventory:
+      properties:
+        playerInventory:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemStack'
+        enderChestInventory:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemStack'
+        hotbar:
+          $ref: '#/components/schemas/PlayerHotbar'
+
+    ItemStack:
+      properties:
+        item:
+          type: string
+        displayName:
+          type: string
+        itemGroup:
+          type: string
+        isEmpty:
+          type: boolean
+        count:
+          type: number
+        damage:
+          type: number
+        maxDamage:
+          type: number
+        tag:
+          type: object
+        capabilityTag:
+          type: object
+    WorldStub:
+      properties:
+        type:
+          type: string
+        name:
+          type: string
+        seed:
+          type: number
+        raining:
+          type: boolean
+        thundering:
+          type: boolean
+        difficulty:
+          type: string
+          enum:
+          - peaceful
+          - easy
+          - medium
+          - hard
+    World:
+      allOf:
+      - $ref: '#/components/schemas/WorldStub'
+
+    TileEntity:
+      properties:
+        type:
+          type: string
+        tag:
+          type: object
+
+    BlockState:
+      properties:
+        name:
+          type: string
+        position:
+          $ref: '#/components/schemas/BlockPos'
+        properties:
+          type: object
+        tileEntity:
+          $ref: '#/components/schemas/TileEntity'
+
+paths:
+  /content:
+    get:
+      tags:
+      - content
+      summary: Returns a list of loaded content
+      description: >-
+        Returns a complete list of all Blocks/Items currently loaded into the
+        game
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemStack'
+  /players:
+    get:
+      tags:
+      - player
+      summary: Returns a list of online players
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlayerEntityStub'
+  /players/{playerId}:
+    get:
+      tags:
+      - player
+      summary: Returns detailed information about a specific player
+      parameters:
+      - name: playerId
+        in: path
+        required: true
+        description: Player's Minecraft UUID
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerEntity'
+
+  /players/{playerId}/inventories:
+    get:
+      tags:
+      - player
+      summary: Returns detailed information about a specific player's inventory
+      parameters:
+      - name: playerId
+        in: path
+        required: true
+        description: Player's Minecraft UUID
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerInventory'
+
+  /worlds:
+    get:
+      tags:
+      - world
+      summary: Returns a list of loaded dimensions
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorldStub'
+
+  /worlds/{worldName}:
+    get:
+      tags:
+      - world
+      summary: Returns a specific World by ID
+      parameters:
+      - name: worldName
+        in: path
+        required: true
+        description: 'World name (ex. minecraft:overworld)'
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/World'
+  /worlds/{worldName}/entities:
+    get:
+      tags:
+      - world
+      summary: Returns a list of all entities active in the world
+      parameters:
+      - name: worldName
+        in: path
+        required: true
+        description: 'World name (ex. minecraft:overworld)'
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entity'
+  /worlds/{worldName}/blocks/{xyz}:
+    get:
+      tags:
+      - world
+      summary: Returns information about the block at the requested coordinates
+      parameters:
+      - name: worldName
+        in: path
+        required: true
+        description: 'World name (ex. minecraft:overworld)'
+        schema:
+          type: string
+      - name: xyz
+        in: path
+        required: true
+        description: 'The desired X, Y, and Z coordinate, seperated by commas'
+        schema:
+          type: string
+
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockState'
